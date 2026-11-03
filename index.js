@@ -16,6 +16,7 @@ app.listen(port, () => console.log(`Server running port on ${port}!`));
 
 //          Database
 
+// ------------------ POST Book
 app.post("/add-books", async (req, res) => {
   const bookCollection = await connectToMongoDB();
   const data = req.body;
@@ -24,9 +25,20 @@ app.post("/add-books", async (req, res) => {
   res.send(result);
 });
 
+// ------------------ GET All Book
 app.get("/books", async (req, res) => {
   const bookCollection = await connectToMongoDB();
 
   const result = await bookCollection.find().toArray();
+  res.send(result);
+});
+
+// ------------------ GET Book by Email
+app.get("/my-books/:userEmail", async (req, res) => {
+  const bookCollection = await connectToMongoDB();
+  const { userEmail } = req.params;
+
+  const result = await bookCollection.find({ userEmail: userEmail }).toArray();
+
   res.send(result);
 });
