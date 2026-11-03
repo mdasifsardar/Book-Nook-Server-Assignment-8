@@ -10,8 +10,9 @@ export async function connectToMongoDB() {
 
     const db = client.db("booknook");
     const bookCollection = db.collection("books");
+    const myBookCollection = db.collection("mybook");
 
-    return bookCollection;
+    return { bookCollection, myBookCollection };
   } catch (err) {
     console.dir(err);
   }
