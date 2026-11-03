@@ -23,3 +23,10 @@ app.post("/add-books", async (req, res) => {
   const result = await bookCollection.insertOne(data);
   res.send(result);
 });
+
+app.get("/books", async (req, res) => {
+  const bookCollection = await connectToMongoDB();
+
+  const result = await bookCollection.find().toArray();
+  res.send(result);
+});
