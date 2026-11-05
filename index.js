@@ -17,13 +17,18 @@ app.listen(port, () => console.log(`Server running port on ${port}!`));
 
 //          Database
 
+// ------------------ 1st Collection
 // ------------------ POST Book
 app.post("/add-books", async (req, res) => {
   const { bookCollection, myBookCollection } = await connectToMongoDB();
   const data = req.body;
 
-  const result = await bookCollection.insertOne(data);
+  const newBook = {
+    ...data,
+    copies: Number(data.copies),
+  };
 
+  const result = await bookCollection.insertOne(newBook);
   await myBookCollection.insertOne({
     ...data,
     bookId: result.insertedId,
@@ -52,6 +57,7 @@ app.get("/book/:id", async (req, res) => {
   res.send(result);
 });
 
+// ------------------ 2nd Collection
 // ------------------ GET Book by Email
 app.get("/my-book/:userEmail", async (req, res) => {
   const { myBookCollection } = await connectToMongoDB();
@@ -64,11 +70,41 @@ app.get("/my-book/:userEmail", async (req, res) => {
   res.send(result);
 });
 
-// ------------------ DELETE Book by _id
+// ------------------ DELETE Book by bookId
 app.delete("/my-book/:id", async (req, res) => {
   const { myBookCollection } = await connectToMongoDB();
   const { id } = req.params;
-  const result = await myBookCollection.deleteOne({ bookId: new ObjectId(id) });
+  const result = await myBookCollection.deleteOne({ _id: new ObjectId(id) });
+
+  res.send(result);
+});
+
+// ------------------ 3rd Collection
+// ------------------ Post Borrow Book
+app.post("/my-borrow", async (req, res) => {
+  const { borrowCollection, bookCollection } = await connectToMongoDB();
+  const data = req.body;
+
+  const borrowedBooks = await borrowCollection.findOne({
+    bookId: data.bookId,
+    userEmail: data.userEmail,
+  });
+
+  if (borrowedBooks) {
+    return res.status(400).send({
+      success: false,
+      message: "You have already borrowed this book!",
+    });
+  }
+
+  const result = await borrowCollection.insertOne(data);
+
+  await bookCollection.updateOne(
+    {
+      _id: new ObjectId(data.bookId),
+    },
+    { $inc: { copies: -1 } },
+  );
 
   res.send(result);
 });
