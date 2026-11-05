@@ -116,3 +116,15 @@ app.get("/borrows", async (req, res) => {
   const result = await borrowCollection.find().toArray();
   res.send(result);
 });
+
+// ------------------ Get One Borrow Book by userEmail
+app.get("/borrow/:userEmail", async (req, res) => {
+  const { borrowCollection } = await connectToMongoDB();
+  const { userEmail } = req.params;
+
+  const result = await borrowCollection
+    .find({ userEmail: userEmail })
+    .toArray();
+
+  res.send(result);
+});
