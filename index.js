@@ -32,6 +32,7 @@ app.post("/add-books", async (req, res) => {
   await myBookCollection.insertOne({
     ...data,
     bookId: result.insertedId,
+    copies: Number(data.copies),
   });
 
   res.send({
@@ -75,6 +76,33 @@ app.delete("/my-book/:id", async (req, res) => {
   const { myBookCollection } = await connectToMongoDB();
   const { id } = req.params;
   const result = await myBookCollection.deleteOne({ _id: new ObjectId(id) });
+
+  res.send(result);
+});
+
+// ------------------ PATCH Book by bookId
+app.patch("/my-book/:id", async (req, res) => {
+  const { myBookCollection, bookCollection } = await connectToMongoDB();
+  const { id } = req.params;
+
+  const data = req.body;
+  const result = await myBookCollection.updateOne(
+    { _id: new ObjectId(id) },
+
+    {
+      $set: {
+        ...data,
+        copies: Number(data.copies),
+      },
+    },
+  );
+
+  await bookCollection.updateOne(
+    {
+      _id: new ObjectId(data.bookId),
+    },
+    { $set: { ...data, copies: Number(data.copies) } },
+  );
 
   res.send(result);
 });
