@@ -124,9 +124,16 @@ app.get("/my-book/:userEmail", verifyToken, async (req, res) => {
 
 // ------------------ DELETE Book by bookId
 app.delete("/my-book/:id", verifyToken, async (req, res) => {
-  const { myBookCollection } = await connectToMongoDB();
+  const { myBookCollection, bookCollection } = await connectToMongoDB();
   const { id } = req.params;
   const result = await myBookCollection.deleteOne({ _id: new ObjectId(id) });
+
+  //        Delete one book from bookCollection too
+  const myBook = await myBookCollection.findOne({ _id: new ObjectId(id) });
+
+  if (myBook?.bookId) {
+    await bookCollection.deleteOne({ _id: new ObjectId(myBook.bookId) });
+  }
 
   res.send(result);
 });
