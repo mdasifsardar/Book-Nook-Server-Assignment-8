@@ -108,3 +108,11 @@ app.post("/my-borrow", async (req, res) => {
 
   res.send(result);
 });
+
+// ------------------ Get All Borrow Book
+app.get("/borrows", async (req, res) => {
+  const { borrowCollection } = await connectToMongoDB();
+
+  const result = await borrowCollection.find().toArray();
+  res.send(result);
+});
