@@ -20,24 +20,47 @@ app.listen(port, () => console.log(`Server running port on ${port}!`));
 // ------------------ 1st Collection
 // ------------------ POST Book
 app.post("/add-books", async (req, res) => {
-  const { bookCollection, myBookCollection } = await connectToMongoDB();
-  const data = req.body;
+  try {
+    const { bookCollection, myBookCollection } = await connectToMongoDB();
+    const data = req.body;
 
-  const newBook = {
-    ...data,
-    copies: Number(data.copies),
-  };
+    const existingAddBook = await myBookCollection.findOne({
+      userEmail: data.userEmail,
+      name: data.name,
+      author: data.author,
+    });
 
-  const result = await bookCollection.insertOne(newBook);
-  await myBookCollection.insertOne({
-    ...data,
-    bookId: result.insertedId,
-    copies: Number(data.copies),
-  });
+    if (existingAddBook) {
+      return res.status(409).send({
+        success: false,
+        message: "You have already added this book!",
+      });
+    }
 
-  res.send({
-    insertedId: result.insertedId,
-  });
+    const newBook = {
+      ...data,
+      copies: Number(data.copies),
+    };
+
+    const result = await bookCollection.insertOne(newBook);
+    await myBookCollection.insertOne({
+      ...data,
+      bookId: result.insertedId,
+      copies: Number(data.copies),
+    });
+
+    res.status(201).send({
+      success: true,
+      message: "Book added successfully",
+      insertedId: result.insertedId,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({
+      success: false,
+      message: "Internal server error!",
+    });
+  }
 });
 
 // ------------------ GET All Book
