@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { connectToMongoDB } from "./db.js";
 import { ObjectId } from "mongodb";
+import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -17,9 +18,38 @@ app.listen(port, () => console.log(`Server running port on ${port}!`));
 
 //          Database
 
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  // console.log(authHeader);
+
+  if (!authHeader) {
+    return res.status(401).send({
+      message: "Unauthorized!",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).send({
+      message: "Unauthorized!",
+    });
+  }
+
+  const JWKS = createRemoteJWKSet(
+    new URL("http://localhost:3000/api/auth/jwks"),
+  );
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    return res.status(500).send({ message: "Internal server error" });
+  }
+};
+
 // ------------------ 1st Collection
 // ------------------ POST Book
-app.post("/add-books", async (req, res) => {
+app.post("/add-books", verifyToken, async (req, res) => {
   try {
     const { bookCollection, myBookCollection } = await connectToMongoDB();
     const data = req.body;
@@ -72,7 +102,7 @@ app.get("/books", async (req, res) => {
 });
 
 // ------------------ GET Books Details
-app.get("/book/:id", async (req, res) => {
+app.get("/book/:id", verifyToken, async (req, res) => {
   const { bookCollection } = await connectToMongoDB();
 
   const { id } = req.params;
@@ -83,7 +113,7 @@ app.get("/book/:id", async (req, res) => {
 
 // ------------------ 2nd Collection
 // ------------------ GET Book by Email
-app.get("/my-book/:userEmail", async (req, res) => {
+app.get("/my-book/:userEmail", verifyToken, async (req, res) => {
   const { myBookCollection } = await connectToMongoDB();
   const { userEmail } = req.params;
 
@@ -95,7 +125,7 @@ app.get("/my-book/:userEmail", async (req, res) => {
 });
 
 // ------------------ DELETE Book by bookId
-app.delete("/my-book/:id", async (req, res) => {
+app.delete("/my-book/:id", verifyToken, async (req, res) => {
   const { myBookCollection } = await connectToMongoDB();
   const { id } = req.params;
   const result = await myBookCollection.deleteOne({ _id: new ObjectId(id) });
@@ -104,7 +134,7 @@ app.delete("/my-book/:id", async (req, res) => {
 });
 
 // ------------------ PATCH Book by bookId
-app.patch("/my-book/:id", async (req, res) => {
+app.patch("/my-book/:id", verifyToken, async (req, res) => {
   const { myBookCollection, bookCollection } = await connectToMongoDB();
   const { id } = req.params;
 
