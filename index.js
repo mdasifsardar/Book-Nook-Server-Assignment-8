@@ -128,3 +128,24 @@ app.get("/borrow/:userEmail", async (req, res) => {
 
   res.send(result);
 });
+
+// ------------------ Delete One Borrow Book by ID
+app.patch("/borrow/:id", async (req, res) => {
+  const { borrowCollection, bookCollection } = await connectToMongoDB();
+  const { id } = req.params;
+
+  const borrowBook = await borrowCollection.findOne({ _id: new ObjectId(id) });
+
+  if (borrowBook) {
+    await bookCollection.updateOne(
+      {
+        _id: new ObjectId(borrowBook.bookId),
+      },
+      { $inc: { copies: 1 } },
+    );
+  }
+
+  const result = await borrowCollection.deleteOne({ _id: new ObjectId(id) });
+
+  res.send(result);
+});
