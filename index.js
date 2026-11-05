@@ -5,7 +5,7 @@ import { ObjectId } from "mongodb";
 import { jwtVerify, createRemoteJWKSet } from "jose";
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -13,8 +13,6 @@ app.use(express.json());
 app.get("/", (req, res) =>
   res.send({ message: "Server Create Successfully!" }),
 );
-
-app.listen(port, () => console.log(`Server running port on ${port}!`));
 
 //          Database
 
@@ -36,7 +34,7 @@ const verifyToken = async (req, res, next) => {
   }
 
   const JWKS = createRemoteJWKSet(
-    new URL("http://localhost:3000/api/auth/jwks"),
+    new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
   );
 
   try {
@@ -211,7 +209,7 @@ app.get("/borrow/:userEmail", async (req, res) => {
 });
 
 // ------------------ Delete One Borrow Book by ID
-app.patch("/borrow/:id", async (req, res) => {
+app.patch("/borrow/:id", verifyToken, async (req, res) => {
   const { borrowCollection, bookCollection } = await connectToMongoDB();
   const { id } = req.params;
 
@@ -230,3 +228,7 @@ app.patch("/borrow/:id", async (req, res) => {
 
   res.send(result);
 });
+
+//
+app.listen(port, () => console.log(`Server running port on ${port}!`));
+export default app;
